@@ -1,6 +1,7 @@
 # Coolify: Build pack "Docker Compose", set compose file path to compose.prod.yaml (relative to repo root).
 # Assign a domain to the `app` service in the UI; the app listens on container port 80.
-# Set required variables in Coolify (APP_KEY, DB_*, etc.). Optional: APP_URL = $SERVICE_URL_APP when using a generated service URL.
+# Set required variables in Coolify (APP_KEY, DB_*, etc.). APP_URL must match the public URL with the correct scheme
+# (e.g. https://insiderone.example.com) so generated asset URLs are HTTPS. The app trusts X-Forwarded-* from the proxy.
 #
 # Database: this file includes PostgreSQL (`pgsql`). Set DB_DATABASE, DB_USERNAME, DB_PASSWORD (and optionally
 # DB_PORT, default 5432). DB_HOST defaults to `pgsql` so the app uses the compose service. For an external DB
