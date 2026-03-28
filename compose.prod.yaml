@@ -1,6 +1,10 @@
 # Coolify: Build pack "Docker Compose", set compose file path to compose.prod.yaml (relative to repo root).
 # Assign a domain to the `app` service in the UI; the app listens on container port 80.
 # Set required variables in Coolify (APP_KEY, DB_*, etc.). Optional: APP_URL = $SERVICE_URL_APP when using a generated service URL.
+#
+# Database: this file includes PostgreSQL (`pgsql`). Set DB_DATABASE, DB_USERNAME, DB_PASSWORD (and optionally
+# DB_PORT, default 5432). DB_HOST defaults to `pgsql` so the app uses the compose service. For an external DB
+# (RDS, managed Postgres), set DB_HOST to that hostname and you can remove or ignore the `pgsql` service.
 
 services:
   app:
@@ -25,7 +29,7 @@ services:
       LOG_CHANNEL: ${LOG_CHANNEL:-stack}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       DB_CONNECTION: ${DB_CONNECTION:-pgsql}
-      DB_HOST: ${DB_HOST:?}
+      DB_HOST: ${DB_HOST:-pgsql}
       DB_PORT: ${DB_PORT:-5432}
       DB_DATABASE: ${DB_DATABASE:?}
       DB_USERNAME: ${DB_USERNAME:?}
@@ -42,6 +46,9 @@ services:
       XDEBUG_MODE: 'off'
     volumes:
       - insider_storage_public:/var/www/html/storage/app/public
+    depends_on:
+      pgsql:
+        condition: service_healthy
     healthcheck:
       test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1/up >/dev/null || exit 1']
       interval: 30s
@@ -49,6 +56,25 @@ services:
       retries: 3
       start_period: 90s
 
+  pgsql:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:?}
+      POSTGRES_DB: ${DB_DATABASE:?}
+      POSTGRES_USER: ${DB_USERNAME:?}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+    volumes:
+      - insider_pgsql_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE}', '-U', '${DB_USERNAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
 volumes:
   insider_storage_public:
+    driver: local
+  insider_pgsql_data:
     driver: local
