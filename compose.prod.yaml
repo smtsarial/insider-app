@@ -1,0 +1,54 @@
+# Coolify: Build pack "Docker Compose", set compose file path to compose.prod.yaml (relative to repo root).
+# Assign a domain to the `app` service in the UI; the app listens on container port 80.
+# Set required variables in Coolify (APP_KEY, DB_*, etc.). Optional: APP_URL = $SERVICE_URL_APP when using a generated service URL.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/8.4/Dockerfile.prod
+      args:
+        WWWGROUP: ${WWWGROUP:-1000}
+        NODE_VERSION: ${NODE_VERSION:-22}
+    image: insider-app:latest
+    restart: unless-stopped
+    expose:
+      - '80'
+    environment:
+      APP_NAME: ${APP_NAME:-Laravel}
+      APP_ENV: production
+      APP_KEY: ${APP_KEY:?}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_URL: ${APP_URL:?http://localhost}
+      APP_LOCALE: ${APP_LOCALE:-en}
+      APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+      LOG_CHANNEL: ${LOG_CHANNEL:-stack}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DB_CONNECTION: ${DB_CONNECTION:-pgsql}
+      DB_HOST: ${DB_HOST:?}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE:?}
+      DB_USERNAME: ${DB_USERNAME:?}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+      CACHE_STORE: ${CACHE_STORE:-database}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Laravel}
+      VITE_APP_NAME: ${VITE_APP_NAME:-Laravel}
+      WWWUSER: ${WWWUSER:-1000}
+      XDEBUG_MODE: 'off'
+    volumes:
+      - insider_storage_public:/var/www/html/storage/app/public
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://127.0.0.1/up >/dev/null || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  insider_storage_public:
+    driver: local
