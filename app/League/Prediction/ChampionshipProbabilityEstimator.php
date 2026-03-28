@@ -1,11 +1,20 @@
 <?php
 
-namespace App\Services\League;
+namespace App\League\Prediction;
 
+use App\League\Competition\LeagueCompetition;
+use App\League\Form\TeamFormAnalyzer;
+use App\League\Simulation\MatchSimulationEngine;
+use App\League\Standings\PremierLeagueStandingsCalculator;
 use App\Models\LeagueMatch;
 use App\Models\Team;
 use Illuminate\Support\Collection;
 
+/**
+ * Title probability: (1) season over → official table leader; (2) mathematical clinch → 100%/0%;
+ * (3) otherwise Monte Carlo on remaining fixtures, with power+form split on simulated pts/GD/GF ties,
+ * then timeline blend toward a uniform prior for display stability early in the phase.
+ */
 class ChampionshipProbabilityEstimator
 {
     public function __construct(
@@ -14,37 +23,47 @@ class ChampionshipProbabilityEstimator
         private readonly TeamFormAnalyzer $formAnalyzer,
     ) {}
 
-    /**
-     * @param  Collection<int, Team>  $teams
-     * @param  Collection<int, LeagueMatch>  $allMatches
-     * @return array<int, float> team_id => percentage 0–100
-     */
-    public function estimate(Collection $teams, Collection $allMatches, int $iterations = 3000, ?int $baseSeed = null): array
+    public function estimate(LeagueCompetition $competition, ?int $iterations = null, ?int $baseSeed = null): TitleProbabilities
     {
-        $finished = $allMatches->filter(fn (LeagueMatch $m): bool => $m->isFinished())->values();
-        $scheduled = $allMatches
-            ->filter(fn (LeagueMatch $m): bool => ! $m->isFinished())
-            ->sortBy(fn (LeagueMatch $m): array => [$m->matchweek, $m->id])
-            ->values();
+        $iterations ??= (int) config('league.prediction_monte_carlo_iterations', 1200);
+
+        $teams = $competition->teams();
+        $finished = $competition->finishedMatches();
+        $scheduled = $competition->scheduledMatchesSorted();
 
         if ($scheduled->isEmpty()) {
             $table = $this->standingsCalculator->calculate($teams, $finished);
             if ($table->isEmpty()) {
-                return $this->zeros($teams);
+                return TitleProbabilities::allZeros($teams);
             }
 
-            // Season over: one champion from the official table order (H2H, then tie-breaks).
             $shares = $this->championshipSharesForFinalTable($table);
 
-            return $this->sharesToPercentages($shares, $teams);
+            return TitleProbabilities::fromPercentByTeamId($this->sharesToPercentages($shares, $teams));
         }
 
         $clinch = $this->mathematicalClinchPercentages($teams, $finished, $scheduled);
         if ($clinch !== null) {
-            return $clinch;
+            return TitleProbabilities::fromPercentByTeamId($clinch);
         }
 
         $formBoost = $this->formAnalyzer->formStrengthAdjustment($teams, $finished);
+        $weightFloor = (float) config('league.prediction_tie_weight_floor', 0.25);
+        $timelineWeeks = max(1, (int) config('league.timeline_matchweeks', 6));
+        $blendExponent = (float) config('league.title_probability_timeline_blend_exponent', 2);
+        $completedFullMw = $competition->lastFullyCompletedMatchweek();
+
+        /** @var list<array{home: Team, away: Team, home_team_id: int, away_team_id: int, matchweek: int}> $slots */
+        $slots = [];
+        foreach ($scheduled as $m) {
+            $slots[] = [
+                'home' => $m->homeTeam,
+                'away' => $m->awayTeam,
+                'home_team_id' => (int) $m->home_team_id,
+                'away_team_id' => (int) $m->away_team_id,
+                'matchweek' => (int) $m->matchweek,
+            ];
+        }
 
         /** @var array<int, float> $wins */
         $wins = [];
@@ -52,44 +71,52 @@ class ChampionshipProbabilityEstimator
             $wins[$t->id] = 0.0;
         }
 
-        for ($i = 0; $i < $iterations; $i++) {
-            $seed = ($baseSeed ?? 0) + $i * 9973;
-            $simulatedRows = collect();
+        $seedBase = $baseSeed ?? 0;
 
-            foreach ($scheduled as $idx => $match) {
-                /** @var LeagueMatch $match */
-                $home = $match->homeTeam;
-                $away = $match->awayTeam;
+        for ($i = 0; $i < $iterations; $i++) {
+            $seed = $seedBase + $i * 9973;
+            /** @var list<LeagueMatch> $simulated */
+            $simulated = [];
+
+            foreach ($slots as $idx => $slot) {
+                $home = $slot['home'];
+                $away = $slot['away'];
                 $hBoost = $formBoost[$home->id] ?? 0.0;
                 $aBoost = $formBoost[$away->id] ?? 0.0;
                 [$hg, $ga] = $this->simulationEngine->simulate($home, $away, $seed + $idx, $hBoost, $aBoost);
 
-                $copy = $match->replicate();
-                $copy->home_goals = $hg;
-                $copy->away_goals = $ga;
-                $copy->status = 'finished';
-                $simulatedRows->push($copy);
+                $simulated[] = tap(LeagueMatch::make([
+                    'home_team_id' => $slot['home_team_id'],
+                    'away_team_id' => $slot['away_team_id'],
+                    'matchweek' => $slot['matchweek'],
+                    'home_goals' => $hg,
+                    'away_goals' => $ga,
+                    'status' => 'finished',
+                ]), function (LeagueMatch $row) use ($home, $away): void {
+                    $row->setRelation('homeTeam', $home);
+                    $row->setRelation('awayTeam', $away);
+                });
             }
 
-            $combined = $finished->merge($simulatedRows);
+            $combined = $finished->concat($simulated);
             $table = $this->standingsCalculator->calculate($teams, $combined);
 
-            foreach ($this->championshipSharesForMonteCarlo($table) as $teamId => $fraction) {
+            foreach ($this->championshipSharesForMonteCarlo($table, $formBoost, $weightFloor) as $teamId => $fraction) {
                 $wins[$teamId] += $fraction;
             }
         }
 
-        return $this->fractionalWinsToPercentages(
+        return TitleProbabilities::fromPercentByTeamId($this->fractionalWinsToPercentages(
             $wins,
             $iterations,
             $teams,
-            $this->completedFullMatchweeks($allMatches),
-        );
+            $completedFullMw,
+            $timelineWeeks,
+            $blendExponent,
+        ));
     }
 
     /**
-     * If one team’s current points already exceed every rival’s maximum possible points, title is clinched (100% / 0%).
-     *
      * @param  Collection<int, LeagueMatch>  $finished
      * @param  Collection<int, LeagueMatch>  $scheduled
      * @return array<int, float>|null
@@ -117,6 +144,12 @@ class ChampionshipProbabilityEstimator
             $rem[(int) $m->away_team_id]++;
         }
 
+        /** @var array<int, int> $maxPossible */
+        $maxPossible = [];
+        foreach ($teams as $t) {
+            $maxPossible[$t->id] = $pts[$t->id] + 3 * $rem[$t->id];
+        }
+
         $clinchedId = null;
         foreach ($teams as $t) {
             $tid = $t->id;
@@ -125,7 +158,7 @@ class ChampionshipProbabilityEstimator
                 if ($o->id === $tid) {
                     continue;
                 }
-                $othersMax = max($othersMax, $pts[$o->id] + 3 * $rem[$o->id]);
+                $othersMax = max($othersMax, $maxPossible[$o->id]);
             }
             if ($pts[$tid] > $othersMax) {
                 if ($clinchedId !== null && $clinchedId !== $tid) {
@@ -148,43 +181,51 @@ class ChampionshipProbabilityEstimator
     }
 
     /**
-     * After a simulated season: split title probability when teams are tied on points, GD and goals for.
-     * Do not use squad-strength ordering here — that would assign 100% of tied outcomes to the stronger
-     * club and collapse forecasts (e.g. Liverpool vs Manchester City both on identical top-line stats).
-     *
      * @param  Collection<int, array{team: Team, played: int, won: int, drawn: int, lost: int, gf: int, ga: int, gd: int, points: int}>  $table
+     * @param  array<int, float>  $formBoost
      * @return array<int, float> team_id => share of this iteration (sums to 1.0)
      */
-    private function championshipSharesForMonteCarlo(Collection $table): array
+    private function championshipSharesForMonteCarlo(Collection $table, array $formBoost, float $weightFloor): array
     {
-        $rows = $table->values();
-        if ($rows->isEmpty()) {
+        /** @var list<array{team: Team, played: int, won: int, drawn: int, lost: int, gf: int, ga: int, gd: int, points: int}> $candidates */
+        $candidates = $table->values()->all();
+        if ($candidates === []) {
             return [];
         }
 
-        $candidates = $rows;
         foreach (['points', 'gd', 'gf'] as $key) {
-            $max = $candidates->max(fn (array $r): int => $r[$key]);
-            $next = $candidates->filter(fn (array $r): bool => $r[$key] === $max)->values();
-            if ($next->count() === 1) {
-                return [(int) $next->first()['team']->id => 1.0];
+            $max = max(array_map(fn (array $r): int => $r[$key], $candidates));
+            $next = [];
+            foreach ($candidates as $r) {
+                if ($r[$key] === $max) {
+                    $next[] = $r;
+                }
+            }
+            if (count($next) === 1) {
+                return [(int) $next[0]['team']->id => 1.0];
             }
             $candidates = $next;
         }
 
-        $n = $candidates->count();
-        $share = 1.0 / $n;
-        $out = [];
+        $weights = [];
         foreach ($candidates as $row) {
-            $out[(int) $row['team']->id] = $share;
+            $team = $row['team'];
+            $tid = $team->id;
+            $fb = $formBoost[$tid] ?? 0.0;
+            $weights[$tid] = max($weightFloor, (float) $team->power + $fb);
+        }
+
+        $sum = array_sum($weights);
+        $count = count($weights);
+        $out = [];
+        foreach ($weights as $tid => $w) {
+            $out[$tid] = $sum > 0 ? $w / $sum : 1.0 / max(1, $count);
         }
 
         return $out;
     }
 
     /**
-     * All fixtures played: exactly one champion from the ordered league table (includes H2H and strength).
-     *
      * @param  Collection<int, array{team: Team, played: int, won: int, drawn: int, lost: int, gf: int, ga: int, gd: int, points: int}>  $table
      * @return array<int, float>
      */
@@ -213,26 +254,6 @@ class ChampionshipProbabilityEstimator
     }
 
     /**
-     * Fully completed matchweeks in the schedule (all fixtures in that week finished).
-     *
-     * @param  Collection<int, LeagueMatch>  $allMatches
-     */
-    private function completedFullMatchweeks(Collection $allMatches): int
-    {
-        $max = 0;
-        foreach ($allMatches->groupBy('matchweek') as $week => $inWeek) {
-            if ($inWeek->isEmpty()) {
-                continue;
-            }
-            if ($inWeek->every(fn (LeagueMatch $m): bool => $m->isFinished())) {
-                $max = max($max, (int) $week);
-            }
-        }
-
-        return $max;
-    }
-
-    /**
      * @param  array<int, float>  $wins
      * @return array<int, float>
      */
@@ -241,13 +262,13 @@ class ChampionshipProbabilityEstimator
         int $iterations,
         Collection $teams,
         int $completedFullMatchweeks,
+        int $timelineWeeks,
+        float $blendExponent,
     ): array {
         $n = $teams->count();
         $uniform = 100.0 / max(1, $n);
-        $totalWeeks = max(1, (int) config('league.timeline_matchweeks', 6));
-        $exponent = (float) config('league.title_probability_timeline_blend_exponent', 2);
-        $ratio = min(1.0, $completedFullMatchweeks / $totalWeeks);
-        $blendTowardSim = $ratio ** $exponent;
+        $ratio = min(1.0, $completedFullMatchweeks / $timelineWeeks);
+        $blendTowardSim = $ratio ** $blendExponent;
 
         $out = [];
         foreach ($teams as $t) {
@@ -256,20 +277,6 @@ class ChampionshipProbabilityEstimator
                 : $uniform;
             $mixed = (1.0 - $blendTowardSim) * $uniform + $blendTowardSim * $mcPct;
             $out[$t->id] = round($mixed, 1);
-        }
-
-        return $out;
-    }
-
-    /**
-     * @param  Collection<int, Team>  $teams
-     * @return array<int, float>
-     */
-    private function zeros(Collection $teams): array
-    {
-        $out = [];
-        foreach ($teams as $t) {
-            $out[$t->id] = 0.0;
         }
 
         return $out;

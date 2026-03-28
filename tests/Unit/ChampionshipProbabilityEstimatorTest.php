@@ -1,11 +1,12 @@
 <?php
 
+use App\League\Competition\LeagueCompetition;
+use App\League\Form\TeamFormAnalyzer;
+use App\League\Prediction\ChampionshipProbabilityEstimator;
+use App\League\Simulation\MatchSimulationEngine;
+use App\League\Standings\PremierLeagueStandingsCalculator;
 use App\Models\LeagueMatch;
 use App\Models\Team;
-use App\Services\League\ChampionshipProbabilityEstimator;
-use App\Services\League\MatchSimulationEngine;
-use App\Services\League\PremierLeagueStandingsCalculator;
-use App\Services\League\TeamFormAnalyzer;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -75,6 +76,7 @@ test('mathematical clinch assigns 100 percent to uncatchable leader', function (
     ]);
 
     $all = $finished->merge($scheduled);
+    $competition = LeagueCompetition::fromCollections($teams, $all);
 
     $estimator = new ChampionshipProbabilityEstimator(
         new MatchSimulationEngine,
@@ -82,7 +84,7 @@ test('mathematical clinch assigns 100 percent to uncatchable leader', function (
         new TeamFormAnalyzer,
     );
 
-    $pct = $estimator->estimate($teams, $all, iterations: 100, baseSeed: 1);
+    $pct = $estimator->estimate($competition, iterations: 100, baseSeed: 1)->toArray();
 
     expect($pct[1])->toBe(100.0)
         ->and($pct[2])->toBe(0.0)
@@ -102,13 +104,15 @@ test('finished season awards full title percent to table leader when points gd g
         estMatch($t2, $t1, 2, 'finished', 1, 1),
     ]);
 
+    $competition = LeagueCompetition::fromCollections($teams, $finished);
+
     $estimator = new ChampionshipProbabilityEstimator(
         new MatchSimulationEngine,
         new PremierLeagueStandingsCalculator,
         new TeamFormAnalyzer,
     );
 
-    $pct = $estimator->estimate($teams, $finished, iterations: 50, baseSeed: 1);
+    $pct = $estimator->estimate($competition, iterations: 50, baseSeed: 1)->toArray();
 
     expect($pct[1])->toBe(100.0)
         ->and($pct[2])->toBe(0.0);
@@ -140,13 +144,15 @@ test('monte carlo splits iterations when simulated final table ties on points gd
         estMatch($t3, $t2, 6, 'scheduled', null, null),
     ]);
 
+    $competition = LeagueCompetition::fromCollections($teams, $matches);
+
     $estimator = new ChampionshipProbabilityEstimator(
         new MatchSimulationEngine,
         new PremierLeagueStandingsCalculator,
         new TeamFormAnalyzer,
     );
 
-    $pct = $estimator->estimate($teams, $matches, iterations: 4000, baseSeed: 99);
+    $pct = $estimator->estimate($competition, iterations: 4000, baseSeed: 99)->toArray();
     $max = max($pct);
 
     expect($max)->toBeLessThan(95.0);
@@ -174,13 +180,15 @@ test('close race uses monte carlo so two teams may share positive title percent'
         estMatch($t3, $t2, 6, 'scheduled', null, null),
     ]);
 
+    $competition = LeagueCompetition::fromCollections($teams, $matches);
+
     $estimator = new ChampionshipProbabilityEstimator(
         new MatchSimulationEngine,
         new PremierLeagueStandingsCalculator,
         new TeamFormAnalyzer,
     );
 
-    $pct = $estimator->estimate($teams, $matches, iterations: 2000, baseSeed: 42);
+    $pct = $estimator->estimate($competition, iterations: 2000, baseSeed: 42)->toArray();
     $positive = collect($pct)->filter(fn (float $v): bool => $v > 2.0)->count();
 
     expect($positive)->toBeGreaterThan(1);

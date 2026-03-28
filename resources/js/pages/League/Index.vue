@@ -6,7 +6,7 @@ import LeagueStandingsTable from '@/components/League/LeagueStandingsTable.vue';
 import UclCompetitionContext from '@/components/League/UclCompetitionContext.vue';
 import { computed, onUnmounted, reactive, ref, watch } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { fixtures, simulation } from '@/routes/league';
+import { fixtures, simulation, testScenarios } from '@/routes/league';
 import {
     playAllWeeks,
     playNextWeek,
@@ -230,11 +230,12 @@ const statusStep = computed(() => (props.surface === 'home' ? props.leagueProgre
 
 const fixturesHref = computed(() => fixtures.url());
 const simulationHref = computed(() => simulation.url());
+const testScenariosHref = computed(() => testScenarios.url());
 </script>
 
 <template>
     <div
-        class="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 text-zinc-100 antialiased"
+        class="min-h-screen bg-linear-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-50"
     >
         <Head
             :title="
@@ -257,9 +258,12 @@ const simulationHref = computed(() => simulation.url());
         >
             <div
                 v-if="loading"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 backdrop-blur-sm"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/75 backdrop-blur-md"
             >
-                <div class="flex flex-col items-center gap-3">
+                <div class="flex flex-col items-center gap-4 rounded-2xl border border-zinc-800/80 bg-zinc-900/90 px-8 py-6 shadow-2xl ring-1 ring-white/5">
                     <svg
                         class="h-9 w-9 animate-spin text-emerald-400"
                         xmlns="http://www.w3.org/2000/svg"
@@ -280,50 +284,59 @@ const simulationHref = computed(() => simulation.url());
                             d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                     </svg>
-                    <span class="text-xs font-medium text-zinc-400">Processing…</span>
+                    <span class="text-sm font-medium text-zinc-300">Updating…</span>
+                    <span class="sr-only">Loading, please wait.</span>
                 </div>
             </div>
         </Transition>
 
         <!-- Header -->
-        <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
-            <div class="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-                <div class="flex items-center gap-3">
+        <header
+            class="sticky top-0 z-40 border-b border-zinc-800/90 bg-zinc-950/85 backdrop-blur-md supports-backdrop-filter:bg-zinc-950/75"
+        >
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-5 sm:py-4">
+                <div class="flex min-w-0 items-center gap-3">
                     <div
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-indigo-500/40 bg-indigo-600/90 text-[11px] font-bold tracking-tight text-white shadow-md"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-400/35 bg-linear-to-br from-indigo-600 to-indigo-800 text-xs font-bold tracking-tight text-white shadow-lg shadow-indigo-950/50"
                         aria-hidden="true"
                     >
                         UCL
                     </div>
-                    <div>
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-300/90">
-                            UEFA
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300/90">UEFA</p>
+                        <p class="truncate text-sm font-semibold text-white sm:text-base">Champions League</p>
+                        <p class="hidden text-[10px] font-medium uppercase tracking-wider text-zinc-500 sm:block">
+                            League phase · demo
                         </p>
-                        <p class="text-sm font-semibold text-white">Champions League</p>
-                        <p class="text-[9px] font-medium uppercase tracking-wider text-zinc-500">League phase · demo</p>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center justify-end gap-2">
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <Link
+                        :href="testScenariosHref"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-zinc-800/80 hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                    >
+                        Test scenarios
+                    </Link>
                     <Link
                         v-if="surface === 'wizard' && step === 'simulation'"
                         :href="fixturesHref"
-                        class="text-[11px] font-medium text-zinc-500 underline decoration-zinc-600 underline-offset-2 hover:text-zinc-300"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:bg-zinc-800/80 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                     >
                         Fixtures
                     </Link>
                     <Link
                         v-if="surface === 'wizard'"
                         href="/"
-                        class="text-[11px] font-medium text-indigo-400/90 underline decoration-indigo-500/50 underline-offset-2 hover:text-indigo-300"
+                        class="rounded-lg px-3 py-1.5 text-xs font-semibold text-indigo-300 transition hover:bg-indigo-950/50 hover:text-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                     >
                         Home
                     </Link>
                     <span
-                        class="rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                        class="rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wider"
                         :class="{
-                            'border-zinc-700 text-zinc-500': statusStep === 'teams',
-                            'border-amber-700/60 bg-amber-900/20 text-amber-400/90': statusStep === 'fixtures',
-                            'border-emerald-700/60 bg-emerald-900/20 text-emerald-400':
+                            'border-zinc-600/80 bg-zinc-900/50 text-zinc-400': statusStep === 'teams',
+                            'border-amber-600/50 bg-amber-950/40 text-amber-300/90': statusStep === 'fixtures',
+                            'border-emerald-600/50 bg-emerald-950/40 text-emerald-300':
                                 statusStep === 'simulation',
                         }"
                     >
@@ -339,158 +352,196 @@ const simulationHref = computed(() => simulation.url());
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-5 py-8">
+        <main class="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-5 sm:pt-8">
             <!-- ─────────────────────── HOME (archives + club setup) ─────────────────────── -->
             <template v-if="surface === 'home'">
                 <div
                     v-if="leagueProgressStep === 'fixtures'"
-                    class="mb-6 flex flex-col gap-3 rounded-xl border border-amber-800/50 bg-amber-950/25 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    class="mb-8 flex flex-col gap-4 rounded-2xl border border-amber-500/25 bg-linear-to-br from-amber-950/50 to-zinc-900/40 p-5 shadow-lg shadow-black/20 ring-1 ring-amber-500/10 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <p class="text-sm text-amber-100/90">
-                        A fixture calendar is saved. Continue to the draw step to review pairings or start the league
-                        phase.
-                    </p>
+                    <div class="flex gap-3">
+                        <div
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400"
+                            aria-hidden="true"
+                        >
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5"
+                                />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-100">Calendar ready</p>
+                            <p class="mt-1 text-sm leading-relaxed text-amber-100/75">
+                                Fixtures are saved. Review the draw or jump straight into the league phase.
+                            </p>
+                        </div>
+                    </div>
                     <Link
                         :href="fixturesHref"
-                        class="inline-flex shrink-0 items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-amber-500"
+                        class="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-semibold text-amber-950 shadow-md transition hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.98]"
                     >
                         Open fixtures
                     </Link>
                 </div>
                 <div
                     v-else-if="leagueProgressStep === 'simulation'"
-                    class="mb-6 flex flex-col gap-3 rounded-xl border border-emerald-800/50 bg-emerald-950/25 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    class="mb-8 flex flex-col gap-4 rounded-2xl border border-emerald-500/25 bg-linear-to-br from-emerald-950/45 to-zinc-900/40 p-5 shadow-lg shadow-black/20 ring-1 ring-emerald-500/10 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <p class="text-sm text-emerald-100/90">
-                        League phase in progress. Open the matchweek view to play or edit results.
-                    </p>
+                    <div class="flex gap-3">
+                        <div
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400"
+                            aria-hidden="true"
+                        >
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+                                />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-emerald-100">League phase live</p>
+                            <p class="mt-1 text-sm leading-relaxed text-emerald-100/75">
+                                Play matchweeks, edit scores, and track the table — all in one view.
+                            </p>
+                        </div>
+                    </div>
                     <Link
                         :href="simulationHref"
-                        class="inline-flex shrink-0 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-500"
+                        class="inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-950/40 transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.98]"
                     >
-                        Open league phase
+                        Continue league phase
                     </Link>
                 </div>
 
                 <UclCompetitionContext class="mb-8" />
 
-                <h1 class="mb-1 text-xl font-bold text-white">Participant clubs</h1>
-                <p class="mb-2 text-sm text-zinc-500">
-                    League-phase model · 4 clubs · 6 matchdays · home-and-away round robin
-                </p>
-                <p class="mb-6 text-sm leading-relaxed text-zinc-400">
-                    Defaults load from the database (same four clubs after seed). Adjust names, codes, strength, or
-                    <span class="text-zinc-300">draw positions (1–4)</span>, then
-                    <span class="font-medium text-zinc-300">draw schedule &amp; save fixtures</span> — that
-                    single step updates clubs and creates the tournament calendar.
-                </p>
-
-                <div class="mb-6 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-zinc-800 text-[10px] uppercase tracking-wider text-zinc-500">
-                                <th class="px-3 py-3 text-left font-medium">Club</th>
-                                <th class="px-3 py-3 text-left font-medium">Code</th>
-                                <th class="px-3 py-3 text-right font-medium">Power</th>
-                                <th class="px-3 py-3 text-right font-medium">Draw #</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="t in teamDraft"
-                                :key="t.id"
-                                class="border-t border-zinc-800/60 hover:bg-zinc-800/30"
-                            >
-                                <td class="px-3 py-2">
-                                    <input
-                                        v-model="t.name"
-                                        type="text"
-                                        maxlength="255"
-                                        class="w-full rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-white placeholder-zinc-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                        autocomplete="off"
-                                    />
-                                </td>
-                                <td class="px-3 py-2">
-                                    <input
-                                        v-model="t.short_name"
-                                        type="text"
-                                        maxlength="8"
-                                        class="w-20 rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 font-mono text-zinc-200 uppercase focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                        autocomplete="off"
-                                    />
-                                </td>
-                                <td class="px-3 py-2 text-right">
-                                    <input
-                                        v-model.number="t.power"
-                                        type="number"
-                                        min="40"
-                                        max="99"
-                                        class="w-16 rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-right text-emerald-300 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    />
-                                </td>
-                                <td class="px-3 py-2 text-right">
-                                    <select
-                                        v-model.number="t.sort_order"
-                                        class="rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-zinc-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    >
-                                        <option v-for="n in 4" :key="n" :value="n">{{ n }}</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div
-                    v-if="clubsStepErrors.length > 0"
-                    class="mb-8 rounded-lg border border-red-800/60 bg-red-950/30 px-4 py-3 text-sm text-red-200"
-                >
-                    <p class="mb-1 font-semibold text-red-300">Could not create fixtures</p>
-                    <ul class="list-inside list-disc space-y-0.5 text-red-200/90">
-                        <li v-for="(err, i) in clubsStepErrors" :key="i">{{ err }}</li>
-                    </ul>
-                    <p class="mt-2 text-xs text-red-300/80">
-                        Each draw position (1–4) must be used exactly once. Check for duplicate &quot;Draw #&quot;
-                        values.
+                <template v-if="leagueProgressStep !== 'simulation'">
+                    <h1 class="mb-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Participant clubs</h1>
+                    <p class="mb-2 text-sm text-zinc-500">
+                        4 clubs · 6 matchdays · double round-robin (home &amp; away)
                     </p>
-                </div>
+                    <p class="mb-8 max-w-3xl text-sm leading-relaxed text-zinc-400">
+                        Edit squads and draw order, then save — one action updates clubs and builds the full calendar.
+                    </p>
 
-                <template v-if="localSchedulePreview.length > 0">
-                    <h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                        Provisional calendar — 6 matchdays
-                    </h2>
-                    <div :key="schedulePreviewKey" class="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        <div
-                            v-for="block in localSchedulePreview"
-                            :key="'pre-' + block.week"
-                            class="rounded-xl border border-zinc-800 bg-zinc-900/50"
-                        >
-                            <div class="border-b border-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-400">
-                                Matchweek {{ block.week }}
-                            </div>
-                            <ul class="divide-y divide-zinc-800/80 text-sm">
-                                <li
-                                    v-for="m in block.matches"
-                                    :key="m.id"
-                                    class="flex items-center justify-between px-3 py-2 text-zinc-400"
+                    <div
+                        class="mb-6 overflow-hidden rounded-2xl border border-zinc-800/90 bg-zinc-900/60 shadow-xl shadow-black/25 ring-1 ring-white/5"
+                    >
+                        <div class="overflow-x-auto">
+                        <table class="w-full min-w-[20rem] text-sm">
+                            <thead>
+                                <tr class="border-b border-zinc-800/90 text-[10px] uppercase tracking-wider text-zinc-500">
+                                    <th class="px-4 py-3.5 text-left font-medium">Club</th>
+                                    <th class="px-4 py-3.5 text-left font-medium">Code</th>
+                                    <th class="px-4 py-3.5 text-right font-medium">Power</th>
+                                    <th class="px-4 py-3.5 text-right font-medium">Draw #</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="t in teamDraft"
+                                    :key="t.id"
+                                    class="border-t border-zinc-800/60 transition-colors hover:bg-zinc-800/25"
                                 >
-                                    <span>{{ m.home_team.name }}</span>
-                                    <span class="mx-2 text-[10px] text-zinc-600">vs</span>
-                                    <span>{{ m.away_team.name }}</span>
-                                </li>
-                            </ul>
+                                    <td class="px-4 py-2.5">
+                                        <input
+                                            v-model="t.name"
+                                            type="text"
+                                            maxlength="255"
+                                            class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-white placeholder-zinc-600 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                            autocomplete="off"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-2.5">
+                                        <input
+                                            v-model="t.short_name"
+                                            type="text"
+                                            maxlength="8"
+                                            class="w-20 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-2 font-mono text-zinc-200 uppercase focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                            autocomplete="off"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-2.5 text-right">
+                                        <input
+                                            v-model.number="t.power"
+                                            type="number"
+                                            min="40"
+                                            max="99"
+                                            class="w-16 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-2 text-right text-emerald-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-2.5 text-right">
+                                        <select
+                                            v-model.number="t.sort_order"
+                                            class="rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-2 text-zinc-200 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                        >
+                                            <option v-for="n in 4" :key="n" :value="n">{{ n }}</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                         </div>
                     </div>
-                </template>
 
-                <button
-                    type="button"
-                    class="rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-950/50 transition hover:bg-emerald-500 disabled:opacity-40"
-                    :disabled="loading || teamDraft.length !== 4"
-                    @click="drawScheduleAndSaveFixtures"
-                >
-                    Draw schedule &amp; save fixtures
-                </button>
+                    <div
+                        v-if="clubsStepErrors.length > 0"
+                        class="mb-8 rounded-xl border border-red-500/30 bg-red-950/35 px-4 py-3 text-sm text-red-200 ring-1 ring-red-500/20"
+                    >
+                        <p class="mb-1 font-semibold text-red-300">Could not create fixtures</p>
+                        <ul class="list-inside list-disc space-y-0.5 text-red-200/90">
+                            <li v-for="(err, i) in clubsStepErrors" :key="i">{{ err }}</li>
+                        </ul>
+                        <p class="mt-2 text-xs text-red-300/80">
+                            Each draw position (1–4) must be used exactly once. Check for duplicate &quot;Draw #&quot;
+                            values.
+                        </p>
+                    </div>
+
+                    <template v-if="localSchedulePreview.length > 0">
+                        <h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                            Provisional calendar — 6 matchdays
+                        </h2>
+                        <div :key="schedulePreviewKey" class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div
+                                v-for="block in localSchedulePreview"
+                                :key="'pre-' + block.week"
+                                class="overflow-hidden rounded-2xl border border-zinc-800/90 bg-zinc-900/50 shadow-md ring-1 ring-white/5"
+                            >
+                                <div
+                                    class="border-b border-zinc-800/80 bg-zinc-800/25 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-zinc-400"
+                                >
+                                    Matchweek {{ block.week }}
+                                </div>
+                                <ul class="divide-y divide-zinc-800/80 text-sm">
+                                    <li
+                                        v-for="m in block.matches"
+                                        :key="m.id"
+                                        class="flex items-center justify-between px-3 py-2 text-zinc-400"
+                                    >
+                                        <span>{{ m.home_team.name }}</span>
+                                        <span class="mx-2 text-[10px] text-zinc-600">vs</span>
+                                        <span>{{ m.away_team.name }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </template>
+
+                    <button
+                        type="button"
+                        class="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-950/40 transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
+                        :disabled="loading || teamDraft.length !== 4"
+                        @click="drawScheduleAndSaveFixtures"
+                    >
+                        Draw schedule &amp; save fixtures
+                    </button>
+                </template>
 
                 <LeaguePastTournamentsPanel class="mt-12" :tournaments="tournamentHistory" />
             </template>
@@ -501,16 +552,18 @@ const simulationHref = computed(() => simulation.url());
 
             <!-- ─────────────────────── FIXTURES STEP ─────────────────────── -->
             <template v-if="step === 'fixtures'">
-                <h1 class="mb-1 text-xl font-bold text-white">Fixture draw</h1>
-                <p class="mb-6 text-sm text-zinc-500">12 fixtures · 6 matchdays (double round-robin)</p>
+                <h1 class="mb-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Fixture draw</h1>
+                <p class="mb-8 text-sm text-zinc-500">12 fixtures · 6 matchdays · every team plays home and away</p>
 
-                <div class="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div
                         v-for="block in matchesByWeek"
                         :key="block.week"
-                        class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50"
+                        class="overflow-hidden rounded-2xl border border-zinc-800/90 bg-zinc-900/55 shadow-lg shadow-black/20 ring-1 ring-white/5"
                     >
-                        <div class="border-b border-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-400">
+                        <div
+                            class="border-b border-zinc-800/90 bg-zinc-800/30 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-zinc-400"
+                        >
                             Matchweek {{ block.week }}
                         </div>
                         <ul class="divide-y divide-zinc-800/80 text-sm">
@@ -530,7 +583,7 @@ const simulationHref = computed(() => simulation.url());
                 <div class="flex flex-wrap gap-3">
                     <button
                         type="button"
-                        class="rounded-lg border border-zinc-600 bg-zinc-800/80 px-6 py-2.5 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:opacity-40"
+                        class="rounded-xl border border-zinc-600 bg-zinc-800/90 px-6 py-3 text-sm font-semibold text-zinc-200 shadow-sm transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
                         :disabled="loading"
                         title="Random reshuffle: same 12 double round-robin constraints, new pairing draw for the four clubs"
                         @click="router.post(storeFixtures.url())"
@@ -539,7 +592,7 @@ const simulationHref = computed(() => simulation.url());
                     </button>
                     <button
                         type="button"
-                        class="rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-950/50 transition hover:bg-emerald-500 disabled:opacity-40"
+                        class="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-950/40 transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
                         :disabled="loading"
                         @click="router.post(startSimulation.url())"
                     >
@@ -550,37 +603,53 @@ const simulationHref = computed(() => simulation.url());
 
             <!-- ─────────────────────── SIMULATION STEP (brief layout: table | results | predictions) ─────────────────────── -->
             <template v-else>
-                <div class="mb-6">
+                <div
+                    class="mb-8 rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-5 shadow-lg shadow-black/15 ring-1 ring-white/5 sm:p-6"
+                >
                     <h1 class="text-xl font-bold tracking-tight text-white sm:text-2xl">
                         UEFA Champions League — league phase
                     </h1>
-                    <p class="mt-1 text-sm text-zinc-500">
-                        European points system (3-1-0) &amp; UEFA-style ranking · 4 clubs · title estimates from
-                        matchday 4.
+                    <p class="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
+                        3-1-0 points · UEFA-style table tie-breakers · Title estimates from matchday 4 (Monte Carlo on
+                        remaining fixtures).
                     </p>
-                    <p class="mt-1 text-sm text-zinc-400">
-                        Results column: matchday {{ currentViewWeekNum }} of 6.
+                    <p
+                        class="mt-3 inline-flex items-center gap-2 rounded-lg bg-zinc-800/60 px-3 py-1.5 text-xs font-medium text-zinc-300 ring-1 ring-zinc-700/80"
+                    >
+                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true" />
+                        Viewing matchday {{ currentViewWeekNum }} of 6
                     </p>
                 </div>
 
                 <!-- Week navigation strip -->
-                <div class="mb-6 flex flex-wrap gap-2">
+                <div class="mb-2">
+                    <p id="mw-label" class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Matchdays
+                    </p>
+                </div>
+                <div
+                    class="mb-8 flex flex-wrap gap-1.5 rounded-2xl border border-zinc-800/90 bg-zinc-900/50 p-1.5 ring-1 ring-white/5"
+                    role="group"
+                    aria-labelledby="mw-label"
+                >
                     <button
                         v-for="w in 6"
                         :key="w"
                         type="button"
-                        class="relative flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-all"
+                        :aria-pressed="w === currentViewWeekNum"
+                        :aria-label="`Matchweek ${w}, ${weekStatus(w) === 'done' ? 'finished' : weekStatus(w) === 'next' ? 'next to play' : 'upcoming'}`"
+                        class="relative flex min-h-11 min-w-13 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:flex-none sm:px-4"
                         :class="{
-                            'bg-emerald-600 text-white shadow-md shadow-emerald-950/50 ring-1 ring-emerald-400/30':
+                            'bg-emerald-600 text-white shadow-md shadow-emerald-950/40':
                                 w === currentViewWeekNum,
-                            'bg-zinc-800/80 text-zinc-400 ring-1 ring-zinc-700 hover:bg-zinc-800 hover:text-zinc-200':
-                                w !== currentViewWeekNum,
+                            'text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-200': w !== currentViewWeekNum,
                         }"
                         @click="router.post(setViewWeek.url(), { week: w })"
                     >
                         <svg
                             v-if="weekStatus(w) === 'done'"
-                            class="h-3 w-3 shrink-0 text-emerald-400"
+                            class="h-3 w-3 shrink-0"
+                            :class="w === currentViewWeekNum ? 'text-white' : 'text-emerald-400'"
                             viewBox="0 0 12 12"
                             fill="none"
                         >
@@ -594,14 +663,15 @@ const simulationHref = computed(() => simulation.url());
                         </svg>
                         <span
                             v-else-if="weekStatus(w) === 'next'"
-                            class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"
+                            class="h-1.5 w-1.5 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-zinc-900"
+                            :class="w === currentViewWeekNum ? 'bg-amber-200 ring-white/40' : 'bg-amber-400 ring-transparent'"
                         />
                         <span>MW {{ w }}</span>
                     </button>
                 </div>
 
-                <!-- Three-column dashboard (Figure 1.a / 2.a) -->
-                <div class="grid min-h-[32rem] grid-cols-1 gap-5 xl:grid-cols-12 xl:items-stretch">
+                <!-- Three-column dashboard -->
+                <div class="grid min-h-128 grid-cols-1 gap-6 xl:grid-cols-12 xl:items-stretch">
                     <div class="flex min-h-0 flex-col xl:col-span-4">
                         <LeagueStandingsTable
                             :standings="standings"
@@ -611,11 +681,11 @@ const simulationHref = computed(() => simulation.url());
                             <template #footer>
                                 <button
                                     type="button"
-                                    class="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-950/50 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-950/40 transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-40"
                                     :disabled="nextPlayableWeek === null || loading"
                                     @click="router.post(playAllWeeks.url())"
                                 >
-                                    Play all
+                                    Play all remaining
                                 </button>
                             </template>
                         </LeagueStandingsTable>
@@ -632,11 +702,11 @@ const simulationHref = computed(() => simulation.url());
                             <template #footer>
                                 <button
                                     type="button"
-                                    class="w-full rounded-lg bg-zinc-800 px-4 py-2.5 text-sm font-semibold text-zinc-200 ring-1 ring-zinc-700 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="w-full rounded-xl bg-zinc-800 px-4 py-3 text-sm font-semibold text-zinc-200 ring-1 ring-zinc-600/80 transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-40"
                                     :disabled="nextPlayableWeek === null || loading"
                                     @click="router.post(playNextWeek.url())"
                                 >
-                                    Next week
+                                    Play next matchweek
                                 </button>
                             </template>
                         </LeagueMatchweekPanel>
@@ -653,11 +723,13 @@ const simulationHref = computed(() => simulation.url());
                 <!-- Season complete — champion banner -->
                 <div
                     v-if="seasonComplete"
-                    class="mt-5 overflow-hidden rounded-xl border border-amber-700/50 bg-amber-950/30"
+                    class="mt-8 overflow-hidden rounded-2xl border border-amber-500/30 bg-linear-to-br from-amber-950/40 to-zinc-900/30 shadow-lg shadow-black/20 ring-1 ring-amber-500/15"
                 >
-                    <div class="border-b border-amber-800/40 bg-amber-950/40 px-4 py-3">
-                        <p class="text-sm font-bold text-amber-300">League phase complete</p>
-                        <p class="mt-0.5 text-[11px] text-amber-700/80">Final table is locked (knockout rounds not simulated).</p>
+                    <div class="border-b border-amber-800/40 bg-amber-950/35 px-5 py-4">
+                        <p class="text-base font-bold text-amber-200">League phase complete</p>
+                        <p class="mt-1 text-xs leading-relaxed text-amber-200/70">
+                            Final standings below. Knockouts are not part of this demo.
+                        </p>
                     </div>
                     <div class="space-y-2 p-4">
                         <div
@@ -683,11 +755,11 @@ const simulationHref = computed(() => simulation.url());
                 </div>
 
                 <!-- Global actions (play controls live under table / match columns per brief) -->
-                <div class="mt-6 flex flex-wrap gap-3">
+                <div class="mt-8 flex flex-wrap gap-3">
                     <button
                         v-if="seasonComplete"
                         type="button"
-                        class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-950/50 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-950/40 transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
                         :disabled="loading"
                         @click="postResetLeague"
                     >
@@ -695,7 +767,7 @@ const simulationHref = computed(() => simulation.url());
                     </button>
                     <button
                         type="button"
-                        class="rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-950/60"
+                        class="rounded-xl border border-red-800/50 bg-red-950/35 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-950/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
                         :disabled="loading"
                         @click="postResetLeague"
                     >
@@ -703,23 +775,23 @@ const simulationHref = computed(() => simulation.url());
                     </button>
                 </div>
 
-                <p v-if="seasonComplete" class="mt-4 text-sm font-medium text-emerald-400/90">
-                    League phase finished — start another campaign with “New tournament” or Reset to clear data and
-                    draw a new schedule.
+                <p v-if="seasonComplete" class="mt-4 max-w-xl text-sm leading-relaxed text-zinc-500">
+                    Archive this run and return to the hub when you are ready for the next draw. New tournament and Reset
+                    both save history (when matches were played) before clearing.
                 </p>
 
                 <!-- Season chronicle (history matrix) -->
                 <div
                     v-if="predictionHistoryGrid.after_matchweeks.length > 0"
-                    class="mt-10 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40"
+                    class="mt-12 overflow-hidden rounded-2xl border border-zinc-800/90 bg-zinc-900/50 shadow-lg shadow-black/20 ring-1 ring-white/5"
                 >
                     <div
-                        class="border-b border-zinc-800 bg-zinc-900/80 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400"
+                        class="border-b border-zinc-800/90 bg-zinc-800/25 px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-400"
                     >
-                        League phase timeline — points &amp; title probability by matchday
+                        Season timeline — points &amp; title % by matchday
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[36rem] text-xs">
+                        <table class="w-full min-w-xl text-xs">
                             <thead>
                                 <tr class="border-b border-zinc-800 text-[10px] uppercase tracking-wider">
                                     <th class="sticky left-0 z-10 bg-zinc-900 py-2 pl-4 pr-3 text-left text-zinc-500">Club</th>
@@ -772,7 +844,7 @@ const simulationHref = computed(() => simulation.url());
                 <!-- Model calibration (end of season) -->
                 <div
                     v-if="predictionTrackRecord && predictionTrackRecord.favorite_total > 0"
-                    class="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4"
+                    class="mt-6 rounded-2xl border border-zinc-800/90 bg-zinc-900/50 p-5 shadow-md ring-1 ring-white/5"
                 >
                     <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                         Prediction accuracy

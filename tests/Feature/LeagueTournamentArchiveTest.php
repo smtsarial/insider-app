@@ -22,12 +22,15 @@ test('reset archives tournament when at least one match was played', function ()
         ->and($row->champion_team_id)->toBeNull();
 });
 
-test('reset after full season archives completed tournament with champion', function () {
+test('completing all matchweeks then reset archives completed tournament with champion', function () {
     $this->seed(LeagueSeeder::class);
     $this->post(route('league.fixtures.store'), leagueTeamsFormPayload());
     $this->post(route('league.simulation.start'));
-    $this->post(route('league.simulation.play-all'));
-    $this->post(route('league.reset'));
+    $this->post(route('league.simulation.play-all'))->assertRedirect(route('league.simulation'));
+
+    expect(LeagueTournamentArchive::query()->count())->toBe(0);
+
+    $this->post(route('league.reset'))->assertRedirect(route('home'));
 
     $row = LeagueTournamentArchive::query()->first();
     expect($row)->not->toBeNull()

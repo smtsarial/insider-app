@@ -9,9 +9,11 @@ defineProps<{
 </script>
 
 <template>
-    <div class="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-300/20 bg-zinc-900/60 shadow-lg shadow-black/20 ring-1 ring-white/5">
+    <div
+        class="flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/65 shadow-xl shadow-black/25 ring-1 ring-white/5"
+    >
         <div
-            class="border-b border-zinc-800 bg-gradient-to-r from-zinc-800/90 to-zinc-900/90 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400"
+            class="border-b border-zinc-800/90 bg-linear-to-r from-zinc-800/95 to-zinc-900/90 px-4 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-400"
         >
             League phase table
         </div>
@@ -66,7 +68,7 @@ defineProps<{
         >
             Championship probability appears from matchday 4 (after the first three matchdays are complete).
         </p>
-        <div class="mt-auto border-t border-zinc-800/80 p-4">
+        <div class="mt-auto border-t border-zinc-800/80 bg-zinc-950/20 p-4">
             <slot name="footer" />
         </div>
     </div>

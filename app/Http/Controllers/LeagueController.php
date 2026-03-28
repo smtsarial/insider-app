@@ -4,19 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GenerateLeagueFixturesRequest;
 use App\Http\Requests\UpdateLeagueMatchRequest;
+use App\League\Archive\LeagueTournamentArchiveWriter;
+use App\League\Fixtures\RoundRobinFixtureGenerator;
+use App\League\LeagueMatchWeekSimulator;
+use App\League\LeaguePredictionSnapshotPersister;
+use App\League\LeagueScheduleLoader;
+use App\League\LeagueSimulationPresenter;
 use App\Models\LeagueMatch;
 use App\Models\LeagueState;
 use App\Models\LeagueTournamentArchive;
 use App\Models\Team;
-use App\Services\League\ChampionshipProbabilityEstimator;
-use App\Services\League\LeagueTournamentArchiveWriter;
-use App\Services\League\MatchSimulationEngine;
-use App\Services\League\PremierLeagueStandingsCalculator;
-use App\Services\League\RoundRobinFixtureGenerator;
-use App\Services\League\TitlePredictionSnapshotService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,10 +29,10 @@ class LeagueController extends Controller
 
     public function __construct(
         private readonly RoundRobinFixtureGenerator $fixtureGenerator,
-        private readonly MatchSimulationEngine $simulationEngine,
-        private readonly PremierLeagueStandingsCalculator $standingsCalculator,
-        private readonly ChampionshipProbabilityEstimator $probabilityEstimator,
-        private readonly TitlePredictionSnapshotService $titlePredictionSnapshots,
+        private readonly LeagueScheduleLoader $scheduleLoader,
+        private readonly LeagueMatchWeekSimulator $weekSimulator,
+        private readonly LeaguePredictionSnapshotPersister $predictionSnapshotPersister,
+        private readonly LeagueSimulationPresenter $simulationPresenter,
         private readonly LeagueTournamentArchiveWriter $tournamentArchiveWriter,
     ) {}
 
@@ -124,12 +123,15 @@ class LeagueController extends Controller
             return redirect()->route('league.simulation');
         }
 
-        $matches = $this->matchesWithTeams();
+        $competition = $this->scheduleLoader->load();
 
         return Inertia::render('League/Index', [
             'surface' => 'wizard',
             'step' => 'fixtures',
-            'matchesByWeek' => $this->matchesByWeekPayload($matches),
+            'matchesByWeek' => $this->simulationPresenter->matchesByWeekPayload(
+                $competition,
+                fn (Team $t): array => $this->teamPayload($t),
+            ),
             'tournamentHistory' => $this->tournamentHistoryPayload(),
         ]);
     }
@@ -172,11 +174,17 @@ class LeagueController extends Controller
             }
         }
 
+        $competition = $this->scheduleLoader->load();
+
         return Inertia::render('League/Index', array_merge([
             'surface' => 'wizard',
             'step' => 'simulation',
             'tournamentHistory' => $this->tournamentHistoryPayload(),
-        ], $this->simulationProps()));
+        ], $this->simulationPresenter->simulationProps(
+            LeagueState::current()->fresh(),
+            $competition,
+            fn (Team $t): array => $this->teamPayload($t),
+        )));
     }
 
     public function setViewWeek(Request $request): RedirectResponse
@@ -198,13 +206,19 @@ class LeagueController extends Controller
             return redirect()->route('home');
         }
 
-        $week = $this->nextPlayableWeek();
+        $week = $this->scheduleLoader->load()->nextPlayableMatchweek();
         if ($week === null) {
             return redirect()->route('league.simulation');
         }
 
-        $this->simulateWeek($week);
+        $this->weekSimulator->simulateScheduledWeek($week);
         $state->update(['current_view_week' => $week]);
+
+        $this->predictionSnapshotPersister->persist(
+            LeagueState::current()->fresh(),
+            $this->scheduleLoader->load(),
+            $this->snapshotIterationsOverride,
+        );
 
         return redirect()->route('league.simulation');
     }
@@ -218,15 +232,30 @@ class LeagueController extends Controller
 
         $this->snapshotIterationsOverride = (int) config('league.prediction_monte_carlo_iterations_fast', 500);
 
+        $simulatedAnyWeek = false;
         try {
-            while (($week = $this->nextPlayableWeek()) !== null) {
-                $this->simulateWeek($week);
+            while (($week = $this->scheduleLoader->load()->nextPlayableMatchweek()) !== null) {
+                $this->weekSimulator->simulateScheduledWeek($week);
+                $this->predictionSnapshotPersister->persist(
+                    LeagueState::current()->fresh(),
+                    $this->scheduleLoader->load(),
+                    $this->snapshotIterationsOverride,
+                );
+                $simulatedAnyWeek = true;
             }
         } finally {
             $this->snapshotIterationsOverride = null;
         }
 
-        $this->persistPredictionSnapshot();
+        if (! $simulatedAnyWeek) {
+            return redirect()->route('league.simulation');
+        }
+
+        $this->predictionSnapshotPersister->persist(
+            LeagueState::current()->fresh(),
+            $this->scheduleLoader->load(),
+            null,
+        );
 
         $state->update([
             'current_view_week' => (int) config('league.timeline_matchweeks', 6),
@@ -237,17 +266,7 @@ class LeagueController extends Controller
 
     public function reset(): RedirectResponse
     {
-        DB::transaction(function (): void {
-            $state = LeagueState::current();
-            $this->tournamentArchiveWriter->archiveIfCompetitionExists($state);
-
-            LeagueMatch::query()->delete();
-            $state->update([
-                'step' => 'teams',
-                'current_view_week' => 1,
-                'prediction_snapshots' => null,
-            ]);
-        });
+        $this->performLeagueReset();
 
         return redirect()->route('home');
     }
@@ -272,78 +291,19 @@ class LeagueController extends Controller
         return redirect()->route('league.simulation');
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function simulationProps(): array
+    private function performLeagueReset(): void
     {
-        $state = LeagueState::current();
-        $teams = Team::query()->orderBy('sort_order')->get();
-        $matches = $this->matchesWithTeams();
+        DB::transaction(function (): void {
+            $state = LeagueState::current();
+            $this->tournamentArchiveWriter->archiveIfCompetitionExists($state);
 
-        $finished = $matches->filter(fn (LeagueMatch $m): bool => $m->isFinished())->values();
-        $standings = $this->standingsCalculator->calculate($teams, $finished);
-        $lastCompleted = $this->lastCompletedMatchweekFromCollection($matches);
-        $nextPlayable = $this->nextPlayableWeekFromCollection($matches);
-        $seasonComplete = $nextPlayable === null && $matches->isNotEmpty();
-
-        // Show title-race model in the last 3 matchweeks (weeks 4–6) as per the brief.
-        $predictionActive = $lastCompleted >= 3 || $seasonComplete;
-
-        $iterations = $this->predictionMonteCarloIterations();
-
-        $predMap = $predictionActive
-            ? $this->probabilityEstimator->estimate($teams, $matches->values(), $iterations)
-            : [];
-
-        /** @var list<array<string, mixed>>|null $snapshots */
-        $snapshots = is_array($state->prediction_snapshots) ? $state->prediction_snapshots : null;
-        $historyGrid = $this->titlePredictionSnapshots->buildHistoryGrid(
-            $teams,
-            $snapshots,
-            fn (Team $t): array => $this->teamPayload($t),
-        );
-
-        $trackRecord = null;
-        if ($seasonComplete) {
-            $championIds = $this->standingsCalculator->firstPlaceTeamIds($teams, $finished);
-            $trackRecord = $this->titlePredictionSnapshots->favoriteVersusChampionTrackRecord($snapshots, $championIds);
-            if (is_array($trackRecord)) {
-                $trackRecord['champion_names'] = $teams
-                    ->whereIn('id', $trackRecord['champion_team_ids'])
-                    ->pluck('name')
-                    ->values()
-                    ->all();
-            }
-        }
-
-        return [
-            'currentViewWeek' => $state->current_view_week,
-            'lastCompletedMatchweek' => $lastCompleted,
-            'nextPlayableWeek' => $nextPlayable,
-            'seasonComplete' => $seasonComplete,
-            'predictionActive' => $predictionActive,
-            'standings' => $standings->map(function (array $row) use ($predMap, $predictionActive): array {
-                /** @var Team $team */
-                $team = $row['team'];
-
-                return [
-                    'team' => $this->teamPayload($team),
-                    'played' => $row['played'],
-                    'won' => $row['won'],
-                    'drawn' => $row['drawn'],
-                    'lost' => $row['lost'],
-                    'gf' => $row['gf'],
-                    'ga' => $row['ga'],
-                    'gd' => $row['gd'],
-                    'points' => $row['points'],
-                    'title_percent' => $predictionActive ? ($predMap[$team->id] ?? 0.0) : null,
-                ];
-            })->values()->all(),
-            'matchesByWeek' => $this->matchesByWeekPayload($matches),
-            'predictionHistoryGrid' => $historyGrid,
-            'predictionTrackRecord' => $trackRecord,
-        ];
+            LeagueMatch::query()->delete();
+            $state->update([
+                'step' => 'teams',
+                'current_view_week' => 1,
+                'prediction_snapshots' => null,
+            ]);
+        });
     }
 
     private function teamPayload(Team $t): array
@@ -355,94 +315,6 @@ class LeagueController extends Controller
             'power' => $t->power,
             'sort_order' => $t->sort_order,
         ];
-    }
-
-    /**
-     * @param  Collection<int, LeagueMatch>  $matches
-     * @return array<int, list<array<string, mixed>>>
-     */
-    private function matchesByWeekPayload($matches): array
-    {
-        $grouped = $matches->groupBy('matchweek');
-        $weeks = [];
-        for ($w = 1; $w <= 6; $w++) {
-            $list = $grouped->get($w, collect());
-            $weeks[] = [
-                'week' => $w,
-                'matches' => $list->map(function (LeagueMatch $m): array {
-                    return [
-                        'id' => $m->id,
-                        'matchweek' => $m->matchweek,
-                        'home_team' => $this->teamPayload($m->homeTeam),
-                        'away_team' => $this->teamPayload($m->awayTeam),
-                        'home_goals' => $m->home_goals,
-                        'away_goals' => $m->away_goals,
-                        'status' => $m->status,
-                        'is_manually_edited' => $m->is_manually_edited,
-                    ];
-                })->values()->all(),
-            ];
-        }
-
-        return $weeks;
-    }
-
-    /**
-     * @return Collection<int, LeagueMatch>
-     */
-    private function matchesWithTeams()
-    {
-        return LeagueMatch::query()
-            ->with(['homeTeam', 'awayTeam'])
-            ->orderBy('matchweek')
-            ->orderBy('id')
-            ->get();
-    }
-
-    private function predictionMonteCarloIterations(): int
-    {
-        return (int) config('league.prediction_monte_carlo_iterations', 1200);
-    }
-
-    /**
-     * @param  Collection<int, LeagueMatch>  $matches
-     */
-    private function lastCompletedMatchweekFromCollection(Collection $matches): int
-    {
-        $max = 0;
-        foreach ($matches->groupBy('matchweek') as $w => $inWeek) {
-            if ($inWeek->isEmpty()) {
-                continue;
-            }
-            if ($inWeek->every(fn (LeagueMatch $m): bool => $m->isFinished())) {
-                $max = max($max, (int) $w);
-            }
-        }
-
-        return $max;
-    }
-
-    /**
-     * @param  Collection<int, LeagueMatch>  $matches
-     */
-    private function nextPlayableWeekFromCollection(Collection $matches): ?int
-    {
-        $m = $matches
-            ->filter(fn (LeagueMatch $m): bool => $m->status === 'scheduled')
-            ->sortBy(fn (LeagueMatch $m): array => [$m->matchweek, $m->id])
-            ->first();
-
-        return $m ? (int) $m->matchweek : null;
-    }
-
-    private function lastCompletedMatchweek(): int
-    {
-        return $this->lastCompletedMatchweekFromCollection($this->matchesWithTeams());
-    }
-
-    private function nextPlayableWeek(): ?int
-    {
-        return $this->nextPlayableWeekFromCollection($this->matchesWithTeams());
     }
 
     /**
@@ -503,76 +375,12 @@ class LeagueController extends Controller
             ->all();
     }
 
-    private function simulateWeek(int $week): void
-    {
-        $matches = LeagueMatch::query()
-            ->with(['homeTeam', 'awayTeam'])
-            ->where('matchweek', $week)
-            ->where('status', 'scheduled')
-            ->orderBy('id')
-            ->get();
-
-        foreach ($matches as $match) {
-            $seed = (int) ($match->id * 10007 + $week * 131);
-            [$hg, $ga] = $this->simulationEngine->simulate($match->homeTeam, $match->awayTeam, $seed);
-            $match->update([
-                'home_goals' => $hg,
-                'away_goals' => $ga,
-                'status' => 'finished',
-                'is_manually_edited' => false,
-            ]);
-        }
-
-        $this->persistPredictionSnapshot();
-    }
-
-    /**
-     * Stores title-% estimates for the current results (after_matchweek = last fully completed matchweek).
-     */
     private function persistPredictionSnapshot(): void
     {
-        $state = LeagueState::current()->fresh();
-        if ($state->step !== 'simulation') {
-            return;
-        }
-
-        $teams = Team::query()->orderBy('sort_order')->get();
-        $matches = $this->matchesWithTeams();
-        if ($matches->isEmpty()) {
-            return;
-        }
-
-        $afterMw = $this->lastCompletedMatchweekFromCollection($matches);
-
-        // Only run the estimator when points matter: at least one matchweek complete
-        // so the history grid always shows week-by-week progression.
-        $iterations = $this->snapshotIterationsOverride ?? $this->predictionMonteCarloIterations();
-
-        $pred = $this->probabilityEstimator->estimate($teams, $matches->values(), $iterations);
-
-        $finishedThrough = $matches->filter(function (LeagueMatch $m) use ($afterMw): bool {
-            return $m->isFinished() && (int) $m->matchweek <= $afterMw;
-        })->values();
-
-        $tableAtSnapshot = $this->standingsCalculator->calculate($teams, $finishedThrough);
-        $standingsRows = $tableAtSnapshot->map(fn (array $r): array => [
-            'team_id' => $r['team']->id,
-            'played' => $r['played'],
-            'won' => $r['won'],
-            'drawn' => $r['drawn'],
-            'lost' => $r['lost'],
-            'gf' => $r['gf'],
-            'ga' => $r['ga'],
-            'gd' => $r['gd'],
-            'points' => $r['points'],
-        ])->values()->all();
-
-        $merged = $this->titlePredictionSnapshots->upsert(
-            is_array($state->prediction_snapshots) ? $state->prediction_snapshots : null,
-            $afterMw,
-            $pred,
-            $standingsRows,
+        $this->predictionSnapshotPersister->persist(
+            LeagueState::current()->fresh(),
+            $this->scheduleLoader->load(),
+            $this->snapshotIterationsOverride,
         );
-        $state->update(['prediction_snapshots' => $merged]);
     }
 }

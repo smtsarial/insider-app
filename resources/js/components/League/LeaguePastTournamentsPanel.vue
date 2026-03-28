@@ -93,15 +93,17 @@ function ptsInSnapshot(snap: ArchivedPredictionSnapshot, teamId: number): string
 
 <template>
     <section
-        class="overflow-hidden rounded-xl border border-zinc-300/15 bg-zinc-900/50 shadow-lg ring-1 ring-white/5"
+        class="overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/55 shadow-xl shadow-black/20 ring-1 ring-white/5"
     >
         <div
-            class="border-b border-zinc-800 bg-gradient-to-r from-zinc-800/80 to-zinc-900/80 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400"
+            class="border-b border-zinc-800/90 bg-linear-to-r from-zinc-800/95 to-zinc-900/90 px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-400"
         >
             Previous league phases
-            <span class="mt-0.5 block font-normal normal-case text-zinc-600">Click a row to open full table and saved forecasts.</span>
+            <span class="mt-1 block font-normal normal-case leading-relaxed text-zinc-500">
+                Expand a row for the full table and saved title-% snapshots.
+            </span>
         </div>
-        <div v-if="tournaments.length === 0" class="px-4 py-6 text-sm text-zinc-500">
+        <div v-if="tournaments.length === 0" class="px-5 py-10 text-center text-sm leading-relaxed text-zinc-500">
             No archived league phases yet. After you play matches and reset or draw a new schedule, the previous
             run appears here.
         </div>
@@ -109,7 +111,7 @@ function ptsInSnapshot(snap: ArchivedPredictionSnapshot, teamId: number): string
             <li v-for="t in tournaments" :key="t.id" class="bg-zinc-900/30">
                 <button
                     type="button"
-                    class="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-zinc-800/25"
+                    class="flex w-full items-start gap-3 px-4 py-4 text-left transition hover:bg-zinc-800/30 focus-visible:bg-zinc-800/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500/50"
                     :aria-expanded="expandedId === t.id"
                     @click="toggle(t.id)"
                 >
@@ -152,7 +154,7 @@ function ptsInSnapshot(snap: ArchivedPredictionSnapshot, teamId: number): string
                             Final table (at archive)
                         </p>
                         <div class="overflow-x-auto rounded-lg border border-zinc-800/80">
-                            <table class="w-full min-w-[32rem] text-sm">
+                            <table class="w-full min-w-lg text-sm">
                                 <thead>
                                     <tr class="border-b border-zinc-800 text-[10px] uppercase tracking-wider text-zinc-500">
                                         <th class="px-3 py-2 text-left font-medium">Club</th>
@@ -197,7 +199,7 @@ function ptsInSnapshot(snap: ArchivedPredictionSnapshot, teamId: number): string
                         <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                             Points &amp; title % by matchweek (saved snapshots)
                         </p>
-                        <table class="w-full min-w-[36rem] text-xs">
+                        <table class="w-full min-w-xl text-xs">
                             <thead>
                                 <tr class="border-b border-zinc-800 text-[10px] uppercase tracking-wider text-zinc-500">
                                     <th class="sticky left-0 z-10 bg-zinc-950 py-2 pl-2 pr-3 text-left">Club</th>

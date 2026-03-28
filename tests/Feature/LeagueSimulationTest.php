@@ -2,6 +2,7 @@
 
 use App\Models\LeagueMatch;
 use App\Models\LeagueState;
+use App\Models\LeagueTournamentArchive;
 use App\Models\Team;
 use Database\Seeders\LeagueSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -127,20 +128,50 @@ test('predictions are inactive before week 4 and active from week 4 onward', fun
             ->has('standings.0.title_percent'));
 });
 
-test('full season stores seven title snapshots and a prediction track record', function () {
+test('full season play all stays on simulation with predictions until reset archives', function () {
     $this->seed(LeagueSeeder::class);
     $this->post(route('league.fixtures.store'), leagueTeamsFormPayload());
     $this->post(route('league.simulation.start'));
-    $this->post(route('league.simulation.play-all'));
+    $this->post(route('league.simulation.play-all'))->assertRedirect(route('league.simulation'));
+
+    expect(LeagueMatch::query()->where('status', 'finished')->count())->toBe(12)
+        ->and(LeagueState::current()->step)->toBe('simulation')
+        ->and(LeagueTournamentArchive::query()->count())->toBe(0);
 
     $this->get(route('league.simulation'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
+            ->where('seasonComplete', true)
             ->has('predictionHistoryGrid.after_matchweeks', 7)
             ->has('predictionTrackRecord')
             ->where('predictionTrackRecord.favorite_total', 6)
             ->where('currentViewWeek', 6)
             ->has('tournamentHistory'));
+
+    $this->post(route('league.reset'))->assertRedirect(route('home'));
+
+    $archive = LeagueTournamentArchive::query()->first();
+    expect($archive)->not->toBeNull()
+        ->and($archive->was_completed)->toBeTrue()
+        ->and($archive->finished_matches_count)->toBe(12);
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tournamentHistory.0.prediction_snapshots'));
+});
+
+test('six play-next requests stay on simulation with no archive until reset', function () {
+    $this->seed(LeagueSeeder::class);
+    $this->post(route('league.fixtures.store'), leagueTeamsFormPayload());
+    $this->post(route('league.simulation.start'));
+
+    for ($i = 0; $i < 6; $i++) {
+        $this->post(route('league.simulation.play-next'))->assertRedirect(route('league.simulation'));
+    }
+
+    expect(LeagueMatch::query()->where('status', 'finished')->count())->toBe(12)
+        ->and(LeagueTournamentArchive::query()->count())->toBe(0);
 });
 
 test('play next week simulates one matchweek', function () {

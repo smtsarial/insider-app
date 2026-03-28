@@ -1,15 +1,17 @@
 <?php
 
-namespace App\Services\League;
+namespace App\League\Archive;
 
+use App\League\LeagueScheduleLoader;
+use App\League\Standings\PremierLeagueStandingsCalculator;
 use App\Models\LeagueMatch;
 use App\Models\LeagueState;
 use App\Models\LeagueTournamentArchive;
-use App\Models\Team;
 
 class LeagueTournamentArchiveWriter
 {
     public function __construct(
+        private readonly LeagueScheduleLoader $scheduleLoader,
         private readonly PremierLeagueStandingsCalculator $standingsCalculator,
     ) {}
 
@@ -18,23 +20,18 @@ class LeagueTournamentArchiveWriter
      */
     public function archiveIfCompetitionExists(LeagueState $state): void
     {
-        $matches = LeagueMatch::query()
-            ->with(['homeTeam', 'awayTeam'])
-            ->orderBy('matchweek')
-            ->orderBy('id')
-            ->get();
-
-        if ($matches->isEmpty()) {
+        $competition = $this->scheduleLoader->load();
+        if (! $competition->hasMatches()) {
             return;
         }
 
-        $finished = $matches->filter(fn (LeagueMatch $m): bool => $m->isFinished())->values();
+        $finished = $competition->finishedMatches();
         if ($finished->isEmpty()) {
             return;
         }
 
-        $teams = Team::query()->orderBy('sort_order')->get();
-        $wasCompleted = $matches->every(fn (LeagueMatch $m): bool => $m->isFinished());
+        $teams = $competition->teams();
+        $wasCompleted = $competition->matches()->every(fn (LeagueMatch $m): bool => $m->isFinished());
 
         $standings = $this->standingsCalculator->calculate($teams, $finished);
         $standingsPayload = $standings->map(fn (array $r): array => [

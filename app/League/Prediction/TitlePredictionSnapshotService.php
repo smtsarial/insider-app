@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\League;
+namespace App\League\Prediction;
 
 use App\Models\Team;
 use Illuminate\Support\Collection;

@@ -1,9 +1,9 @@
 <?php
 
+use App\League\Prediction\TitlePredictionSnapshotService;
+use App\League\Standings\PremierLeagueStandingsCalculator;
 use App\Models\LeagueMatch;
 use App\Models\Team;
-use App\Services\League\PremierLeagueStandingsCalculator;
-use App\Services\League\TitlePredictionSnapshotService;
 use Tests\TestCase;
 
 uses(TestCase::class);

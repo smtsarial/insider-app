@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\LeagueController::update
-* @see app/Http/Controllers/LeagueController.php:255
+* @see app/Http/Controllers/LeagueController.php:274
 * @route '/league/matches/{league_match}'
 */
 export const update = (args: { league_match: string | number } | [league_match: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -16,7 +16,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\LeagueController::update
-* @see app/Http/Controllers/LeagueController.php:255
+* @see app/Http/Controllers/LeagueController.php:274
 * @route '/league/matches/{league_match}'
 */
 update.url = (args: { league_match: string | number } | [league_match: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -43,7 +43,7 @@ update.url = (args: { league_match: string | number } | [league_match: string | 
 
 /**
 * @see \App\Http\Controllers\LeagueController::update
-* @see app/Http/Controllers/LeagueController.php:255
+* @see app/Http/Controllers/LeagueController.php:274
 * @route '/league/matches/{league_match}'
 */
 update.patch = (args: { league_match: string | number } | [league_match: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -53,7 +53,7 @@ update.patch = (args: { league_match: string | number } | [league_match: string 
 
 /**
 * @see \App\Http\Controllers\LeagueController::update
-* @see app/Http/Controllers/LeagueController.php:255
+* @see app/Http/Controllers/LeagueController.php:274
 * @route '/league/matches/{league_match}'
 */
 const updateForm = (args: { league_match: string | number } | [league_match: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -68,7 +68,7 @@ const updateForm = (args: { league_match: string | number } | [league_match: str
 
 /**
 * @see \App\Http\Controllers\LeagueController::update
-* @see app/Http/Controllers/LeagueController.php:255
+* @see app/Http/Controllers/LeagueController.php:274
 * @route '/league/matches/{league_match}'
 */
 updateForm.patch = (args: { league_match: string | number } | [league_match: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

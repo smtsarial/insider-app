@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LeagueStandingRow } from '@/types/league';
 
-const props = defineProps<{
+defineProps<{
     forecastRows: LeagueStandingRow[];
     predictionActive: boolean;
     seasonComplete: boolean;
@@ -9,17 +9,19 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div class="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-300/20 bg-zinc-900/60 shadow-lg shadow-black/20 ring-1 ring-white/5">
+    <div
+        class="flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/65 shadow-xl shadow-black/25 ring-1 ring-white/5"
+    >
         <div
-            class="border-b border-zinc-800 bg-gradient-to-r from-zinc-800/90 to-zinc-900/90 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400"
+            class="border-b border-zinc-800/90 bg-linear-to-r from-zinc-800/95 to-zinc-900/90 px-4 py-3.5 text-xs font-semibold uppercase tracking-wider text-zinc-400"
         >
             Qualification outlook
         </div>
-        <div class="flex flex-1 flex-col p-4">
+        <div class="flex flex-1 flex-col p-5">
             <template v-if="!predictionActive && !seasonComplete">
                 <p class="text-sm leading-relaxed text-zinc-500">
-                    After the first three matchdays are played, estimated league-title probabilities appear here
-                    (Monte Carlo over remaining fixtures; ranking rules match the main table).
+                    After matchday 3, title probabilities appear here — Monte Carlo over remaining fixtures, same ranking
+                    rules as the main table.
                 </p>
             </template>
             <template v-else>
@@ -36,7 +38,7 @@ const props = defineProps<{
                         <span class="w-28 shrink-0 truncate text-sm font-medium text-zinc-200 sm:w-32">
                             {{ row.team.name }}
                         </span>
-                        <div class="relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-800">
+                        <div class="relative h-3 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-800/90 ring-1 ring-zinc-700/50">
                             <div
                                 class="h-full rounded-full transition-all duration-700"
                                 :class="row.title_percent === 100 ? 'bg-amber-400' : 'bg-emerald-500'"

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\League;
+namespace App\League\Standings;
 
 use App\Models\LeagueMatch;
 use App\Models\Team;

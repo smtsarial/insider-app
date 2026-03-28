@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\LeagueController;
+use App\Http\Controllers\LeagueTestScenariosController;
+use App\Http\Middleware\EnsureLeagueTestRunnerEnvironment;
 use App\Models\LeagueState;
 use Illuminate\Support\Facades\Route;
 
@@ -27,4 +29,8 @@ Route::prefix('league')->name('league.')->group(function () {
     Route::post('/simulation/play-all', [LeagueController::class, 'playAllWeeks'])->name('simulation.play-all');
     Route::post('/reset', [LeagueController::class, 'reset'])->name('reset');
     Route::patch('/matches/{league_match}', [LeagueController::class, 'updateMatch'])->name('matches.update');
+    Route::get('/test-scenarios', [LeagueTestScenariosController::class, 'show'])->name('test-scenarios');
+    Route::post('/test-scenarios/run', [LeagueTestScenariosController::class, 'run'])
+        ->middleware(EnsureLeagueTestRunnerEnvironment::class)
+        ->name('test-scenarios.run');
 });

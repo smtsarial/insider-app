@@ -1,10 +1,9 @@
 <?php
 
+use App\League\Fixtures\RoundRobinFixtureGenerator;
+use App\League\Standings\PremierLeagueStandingsCalculator;
 use App\Models\LeagueMatch;
 use App\Models\Team;
-use App\Services\League\MatchSimulationEngine;
-use App\Services\League\PremierLeagueStandingsCalculator;
-use App\Services\League\RoundRobinFixtureGenerator;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -82,17 +81,6 @@ test('orders teams by points then goal difference', function () {
 
     expect($table->first()['team']->id)->toBe(1)
         ->and($table->first()['points'])->toBe(3);
-});
-
-test('match simulation engine is deterministic with seed', function () {
-    $engine = new MatchSimulationEngine;
-    $home = makeTeam(1, 'Home');
-    $away = makeTeam(2, 'Away');
-
-    $a = $engine->simulate($home, $away, 42_001);
-    $b = $engine->simulate($home, $away, 42_001);
-
-    expect($a)->toBe($b);
 });
 
 test('round robin generator yields twelve fixtures', function () {
