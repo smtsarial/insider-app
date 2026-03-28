@@ -33,8 +33,13 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
+        $allowDestructiveDbForBootReset = filter_var(
+            getenv('INSIDER_BOOT_DB_RESET') ?: '',
+            FILTER_VALIDATE_BOOLEAN,
+        );
+
         DB::prohibitDestructiveCommands(
-            app()->isProduction(),
+            app()->isProduction() && ! $allowDestructiveDbForBootReset,
         );
 
         Password::defaults(fn (): ?Password => app()->isProduction()

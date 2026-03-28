@@ -6,6 +6,9 @@
 # Database: this file includes PostgreSQL (`pgsql`). Set DB_DATABASE, DB_USERNAME, DB_PASSWORD (and optionally
 # DB_PORT, default 5432). DB_HOST defaults to `pgsql` so the app uses the compose service. For an external DB
 # (RDS, managed Postgres), set DB_HOST to that hostname and you can remove or ignore the `pgsql` service.
+#
+# On each app container start, the DB is wiped and reseeded (migrate:fresh + LeagueSeeder). Set
+# RESET_DATABASE_ON_DEPLOY=false if you must keep data (e.g. managed Postgres with real users).
 
 services:
   app:
@@ -43,6 +46,7 @@ services:
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Laravel}
       VITE_APP_NAME: ${VITE_APP_NAME:-Laravel}
+      RESET_DATABASE_ON_DEPLOY: ${RESET_DATABASE_ON_DEPLOY:-true}
       WWWUSER: ${WWWUSER:-1000}
       XDEBUG_MODE: 'off'
     volumes:

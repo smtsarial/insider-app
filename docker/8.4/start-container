@@ -22,5 +22,12 @@ if [ $# -gt 0 ]; then
         exec gosu $WWWUSER "$@"
     fi
 else
+    if [ -x /usr/local/bin/prod-database-init.sh ]; then
+        if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+            /usr/local/bin/prod-database-init.sh
+        else
+            gosu $WWWUSER /usr/local/bin/prod-database-init.sh
+        fi
+    fi
     exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
 fi
