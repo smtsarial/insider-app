@@ -54,15 +54,20 @@ COPY docker/8.4/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/8.4/php.ini /etc/php/8.4/cli/conf.d/99-sail.ini
 RUN chmod +x /usr/local/bin/start-container
 
-COPY --chown=sail:sail . /var/www/html
+COPY . /var/www/html
+
+RUN chown -R sail:sail /var/www/html
 
 USER sail
 
-RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/app/public bootstrap/cache \
+RUN cp .env.example .env \
+    && php -r "file_put_contents('.env', preg_replace('/^APP_KEY=.*/m', 'APP_KEY=base64:'.base64_encode(random_bytes(32)), file_get_contents('.env')));" \
+    && mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/app/public bootstrap/cache \
     && composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader \
     && npm ci \
     && npm run build \
-    && npm prune --omit=dev
+    && npm prune --omit=dev \
+    && rm -f .env
 
 USER root
 
