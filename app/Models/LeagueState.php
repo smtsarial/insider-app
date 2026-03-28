@@ -14,6 +14,7 @@ class LeagueState extends Model
     protected $fillable = [
         'step',
         'current_view_week',
+        'prediction_snapshots',
     ];
 
     /**
@@ -23,6 +24,7 @@ class LeagueState extends Model
     {
         return [
             'current_view_week' => 'integer',
+            'prediction_snapshots' => 'array',
         ];
     }
 

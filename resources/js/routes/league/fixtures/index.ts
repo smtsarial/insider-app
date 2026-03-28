@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\LeagueController::store
-* @see app/Http/Controllers/LeagueController.php:47
+* @see app/Http/Controllers/LeagueController.php:69
 * @route '/league/fixtures'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\LeagueController::store
-* @see app/Http/Controllers/LeagueController.php:47
+* @see app/Http/Controllers/LeagueController.php:69
 * @route '/league/fixtures'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeagueController::store
-* @see app/Http/Controllers/LeagueController.php:47
+* @see app/Http/Controllers/LeagueController.php:69
 * @route '/league/fixtures'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\LeagueController::store
-* @see app/Http/Controllers/LeagueController.php:47
+* @see app/Http/Controllers/LeagueController.php:69
 * @route '/league/fixtures'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\LeagueController::store
-* @see app/Http/Controllers/LeagueController.php:47
+* @see app/Http/Controllers/LeagueController.php:69
 * @route '/league/fixtures'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

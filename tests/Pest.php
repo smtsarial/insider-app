@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Team;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /*
@@ -14,7 +16,7 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -43,7 +45,18 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * @return array{teams: list<array{id: int, name: string, short_name: string, power: int, sort_order: int}>}
+ */
+function leagueTeamsFormPayload(): array
 {
-    // ..
+    return [
+        'teams' => Team::query()->orderBy('id')->get()->map(fn (Team $t): array => [
+            'id' => $t->id,
+            'name' => $t->name,
+            'short_name' => $t->short_name,
+            'power' => $t->power,
+            'sort_order' => $t->sort_order,
+        ])->values()->all(),
+    ];
 }

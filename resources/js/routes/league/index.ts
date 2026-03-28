@@ -2,7 +2,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFo
 import simulation73c602 from './simulation'
 import matches from './matches'
 /**
-* @see routes/web.php:18
+* @see routes/web.php:9
 * @route '/league'
 */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see routes/web.php:18
+* @see routes/web.php:9
 * @route '/league'
 */
 index.url = (options?: RouteQueryOptions) => {
@@ -24,7 +24,7 @@ index.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see routes/web.php:18
+* @see routes/web.php:9
 * @route '/league'
 */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -33,7 +33,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see routes/web.php:18
+* @see routes/web.php:9
 * @route '/league'
 */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -42,7 +42,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 /**
-* @see routes/web.php:18
+* @see routes/web.php:9
 * @route '/league'
 */
 const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -51,7 +51,7 @@ const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => (
 })
 
 /**
-* @see routes/web.php:18
+* @see routes/web.php:9
 * @route '/league'
 */
 indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -60,7 +60,7 @@ indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 })
 
 /**
-* @see routes/web.php:18
+* @see routes/web.php:9
 * @route '/league'
 */
 indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -77,7 +77,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\LeagueController::tournamentTeams
-* @see app/Http/Controllers/LeagueController.php:30
+* @see app/Http/Controllers/LeagueController.php:56
 * @route '/league/tournament-teams'
 */
 export const tournamentTeams = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -92,7 +92,7 @@ tournamentTeams.definition = {
 
 /**
 * @see \App\Http\Controllers\LeagueController::tournamentTeams
-* @see app/Http/Controllers/LeagueController.php:30
+* @see app/Http/Controllers/LeagueController.php:56
 * @route '/league/tournament-teams'
 */
 tournamentTeams.url = (options?: RouteQueryOptions) => {
@@ -101,7 +101,7 @@ tournamentTeams.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeagueController::tournamentTeams
-* @see app/Http/Controllers/LeagueController.php:30
+* @see app/Http/Controllers/LeagueController.php:56
 * @route '/league/tournament-teams'
 */
 tournamentTeams.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -111,7 +111,7 @@ tournamentTeams.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => (
 
 /**
 * @see \App\Http\Controllers\LeagueController::tournamentTeams
-* @see app/Http/Controllers/LeagueController.php:30
+* @see app/Http/Controllers/LeagueController.php:56
 * @route '/league/tournament-teams'
 */
 tournamentTeams.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -121,7 +121,7 @@ tournamentTeams.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =>
 
 /**
 * @see \App\Http\Controllers\LeagueController::tournamentTeams
-* @see app/Http/Controllers/LeagueController.php:30
+* @see app/Http/Controllers/LeagueController.php:56
 * @route '/league/tournament-teams'
 */
 const tournamentTeamsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -131,7 +131,7 @@ const tournamentTeamsForm = (options?: RouteQueryOptions): RouteFormDefinition<'
 
 /**
 * @see \App\Http\Controllers\LeagueController::tournamentTeams
-* @see app/Http/Controllers/LeagueController.php:30
+* @see app/Http/Controllers/LeagueController.php:56
 * @route '/league/tournament-teams'
 */
 tournamentTeamsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -141,7 +141,7 @@ tournamentTeamsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'ge
 
 /**
 * @see \App\Http\Controllers\LeagueController::tournamentTeams
-* @see app/Http/Controllers/LeagueController.php:30
+* @see app/Http/Controllers/LeagueController.php:56
 * @route '/league/tournament-teams'
 */
 tournamentTeamsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -158,7 +158,7 @@ tournamentTeams.form = tournamentTeamsForm
 
 /**
 * @see \App\Http\Controllers\LeagueController::fixtures
-* @see app/Http/Controllers/LeagueController.php:74
+* @see app/Http/Controllers/LeagueController.php:117
 * @route '/league/fixtures'
 */
 export const fixtures = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -173,7 +173,7 @@ fixtures.definition = {
 
 /**
 * @see \App\Http\Controllers\LeagueController::fixtures
-* @see app/Http/Controllers/LeagueController.php:74
+* @see app/Http/Controllers/LeagueController.php:117
 * @route '/league/fixtures'
 */
 fixtures.url = (options?: RouteQueryOptions) => {
@@ -182,7 +182,7 @@ fixtures.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeagueController::fixtures
-* @see app/Http/Controllers/LeagueController.php:74
+* @see app/Http/Controllers/LeagueController.php:117
 * @route '/league/fixtures'
 */
 fixtures.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -192,7 +192,7 @@ fixtures.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\LeagueController::fixtures
-* @see app/Http/Controllers/LeagueController.php:74
+* @see app/Http/Controllers/LeagueController.php:117
 * @route '/league/fixtures'
 */
 fixtures.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -202,7 +202,7 @@ fixtures.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\LeagueController::fixtures
-* @see app/Http/Controllers/LeagueController.php:74
+* @see app/Http/Controllers/LeagueController.php:117
 * @route '/league/fixtures'
 */
 const fixturesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -212,7 +212,7 @@ const fixturesForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\LeagueController::fixtures
-* @see app/Http/Controllers/LeagueController.php:74
+* @see app/Http/Controllers/LeagueController.php:117
 * @route '/league/fixtures'
 */
 fixturesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -222,7 +222,7 @@ fixturesForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\LeagueController::fixtures
-* @see app/Http/Controllers/LeagueController.php:74
+* @see app/Http/Controllers/LeagueController.php:117
 * @route '/league/fixtures'
 */
 fixturesForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -239,7 +239,7 @@ fixtures.form = fixturesForm
 
 /**
 * @see \App\Http\Controllers\LeagueController::simulation
-* @see app/Http/Controllers/LeagueController.php:109
+* @see app/Http/Controllers/LeagueController.php:158
 * @route '/league/simulation'
 */
 export const simulation = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -254,7 +254,7 @@ simulation.definition = {
 
 /**
 * @see \App\Http\Controllers\LeagueController::simulation
-* @see app/Http/Controllers/LeagueController.php:109
+* @see app/Http/Controllers/LeagueController.php:158
 * @route '/league/simulation'
 */
 simulation.url = (options?: RouteQueryOptions) => {
@@ -263,7 +263,7 @@ simulation.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeagueController::simulation
-* @see app/Http/Controllers/LeagueController.php:109
+* @see app/Http/Controllers/LeagueController.php:158
 * @route '/league/simulation'
 */
 simulation.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -273,7 +273,7 @@ simulation.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\LeagueController::simulation
-* @see app/Http/Controllers/LeagueController.php:109
+* @see app/Http/Controllers/LeagueController.php:158
 * @route '/league/simulation'
 */
 simulation.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -283,7 +283,7 @@ simulation.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\LeagueController::simulation
-* @see app/Http/Controllers/LeagueController.php:109
+* @see app/Http/Controllers/LeagueController.php:158
 * @route '/league/simulation'
 */
 const simulationForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -293,7 +293,7 @@ const simulationForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\LeagueController::simulation
-* @see app/Http/Controllers/LeagueController.php:109
+* @see app/Http/Controllers/LeagueController.php:158
 * @route '/league/simulation'
 */
 simulationForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -303,7 +303,7 @@ simulationForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\LeagueController::simulation
-* @see app/Http/Controllers/LeagueController.php:109
+* @see app/Http/Controllers/LeagueController.php:158
 * @route '/league/simulation'
 */
 simulationForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -320,7 +320,7 @@ simulation.form = simulationForm
 
 /**
 * @see \App\Http\Controllers\LeagueController::reset
-* @see app/Http/Controllers/LeagueController.php:172
+* @see app/Http/Controllers/LeagueController.php:238
 * @route '/league/reset'
 */
 export const reset = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -335,7 +335,7 @@ reset.definition = {
 
 /**
 * @see \App\Http\Controllers\LeagueController::reset
-* @see app/Http/Controllers/LeagueController.php:172
+* @see app/Http/Controllers/LeagueController.php:238
 * @route '/league/reset'
 */
 reset.url = (options?: RouteQueryOptions) => {
@@ -344,7 +344,7 @@ reset.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\LeagueController::reset
-* @see app/Http/Controllers/LeagueController.php:172
+* @see app/Http/Controllers/LeagueController.php:238
 * @route '/league/reset'
 */
 reset.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -354,7 +354,7 @@ reset.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\LeagueController::reset
-* @see app/Http/Controllers/LeagueController.php:172
+* @see app/Http/Controllers/LeagueController.php:238
 * @route '/league/reset'
 */
 const resetForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -364,7 +364,7 @@ const resetForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\LeagueController::reset
-* @see app/Http/Controllers/LeagueController.php:172
+* @see app/Http/Controllers/LeagueController.php:238
 * @route '/league/reset'
 */
 resetForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

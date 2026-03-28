@@ -93,7 +93,17 @@ class PremierLeagueStandingsCalculator
                 return $mb['gd'] <=> $ma['gd'];
             }
 
-            return $mb['gf'] <=> $ma['gf'];
+            if ($ma['gf'] !== $mb['gf']) {
+                return $mb['gf'] <=> $ma['gf'];
+            }
+
+            $strengthCmp = TeamSquadRating::intrinsic($b) <=> TeamSquadRating::intrinsic($a);
+
+            if ($strengthCmp !== 0) {
+                return $strengthCmp;
+            }
+
+            return $a->id <=> $b->id;
         });
 
         return collect($list)->values()->map(function (Team $team) use ($stats): array {
@@ -111,6 +121,22 @@ class PremierLeagueStandingsCalculator
                 'points' => $s['points'],
             ];
         });
+    }
+
+    /**
+     * Team ids tied for first place after the same ordering used in the league table (including mini-league).
+     *
+     * @param  Collection<int, LeagueMatch>  $finishedMatches
+     * @return list<int>
+     */
+    public function firstPlaceTeamIds(Collection $teams, Collection $finishedMatches): array
+    {
+        $table = $this->calculate($teams, $finishedMatches);
+        if ($table->isEmpty()) {
+            return [];
+        }
+
+        return [(int) $table->first()['team']->id];
     }
 
     /**

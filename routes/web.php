@@ -3,17 +3,8 @@
 use App\Http\Controllers\LeagueController;
 use App\Models\LeagueState;
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
 
-Route::inertia('/', 'Welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
-});
-
-require __DIR__.'/settings.php';
+Route::get('/', [LeagueController::class, 'home'])->name('home');
 
 Route::get('/league', function () {
     $step = LeagueState::current()->step;
@@ -21,7 +12,7 @@ Route::get('/league', function () {
     return match ($step) {
         'fixtures' => redirect()->route('league.fixtures'),
         'simulation' => redirect()->route('league.simulation'),
-        default => redirect()->route('league.tournament-teams'),
+        default => redirect()->route('home'),
     };
 })->name('league.index');
 
