@@ -214,9 +214,7 @@ const forecastRows = computed(() =>
 );
 
 function confirmResetCompetition(): boolean {
-    return window.confirm(
-        'Tüm sezon verisini silmek istiyor musun? / Reset all competition data (fixtures, results, predictions)?',
-    );
+    return window.confirm('Reset all competition data (fixtures, results, predictions)?');
 }
 
 function postResetLeague(): void {
@@ -763,7 +761,7 @@ const testScenariosHref = computed(() => testScenarios.url());
                         :disabled="loading"
                         @click="postResetLeague"
                     >
-                        Yeni turnuva / New tournament
+                        New tournament
                     </button>
                     <button
                         type="button"
